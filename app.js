@@ -254,7 +254,10 @@ function renderStaffDashboard(date) {
   });
 
   document.querySelectorAll("[data-save]").forEach((button) => {
-    button.addEventListener("click", () => saveClientRecord(button.dataset.clientId, button.dataset.save === "confirm", button));
+    button.addEventListener("click", async () => {
+      const card = button.closest(".client-card");
+      await saveClientRecord(card, button.dataset.save === "confirm", button);
+    });
   });
 }
 
@@ -307,9 +310,10 @@ function renderStaffClientCard(client, record) {
         <textarea class="message" placeholder="ご家族・ご本人へ伝える内容（任意）">${escapeHtml(record?.message || "")}</textarea>
       </label>
 
+      <div class="save-status hidden" role="status"></div>
       <div class="card-actions">
-        <button class="button secondary" type="button" data-save="draft" data-client-id="${escapeHtml(client.id)}">下書き保存</button>
-        <button class="button" type="button" data-save="confirm" data-client-id="${escapeHtml(client.id)}">確定して家族へ公開</button>
+        <button class="button secondary" type="button" data-save="draft">下書き保存</button>
+        <button class="button" type="button" data-save="confirm">確定して家族へ公開</button>
       </div>
     </article>
   `;
@@ -322,9 +326,18 @@ function syncAttendanceFields(card) {
   card.querySelectorAll(".vital-input").forEach((input) => { input.disabled = absent; });
 }
 
-async function saveClientRecord(clientId, shouldConfirm, button) {
-  const card = document.querySelector(`[data-card-client="${CSS.escape(clientId)}"]`);
-  if (!card || !state.session?.user) return;
+async function saveClientRecord(card, shouldConfirm, button) {
+  if (!card || !state.session?.user) {
+    alert("保存対象を取得できませんでした。画面を再読み込みしてください。");
+    return;
+  }
+
+  const clientId = card.dataset.cardClient;
+  const statusBox = card.querySelector(".save-status");
+  if (statusBox) {
+    statusBox.className = "save-status notice";
+    statusBox.textContent = shouldConfirm ? "確定処理中です…" : "下書き保存中です…";
+  }
 
   const attendance = card.querySelector(".attendance-select").value;
   const absenceReason = card.querySelector(".absence-reason").value.trim();
@@ -373,9 +386,18 @@ async function saveClientRecord(clientId, shouldConfirm, button) {
 
     if (result.error) throw result.error;
     state.recordsByClient.set(clientId, result.data);
-    renderStaffDashboard(todayJst());
+    if (statusBox) {
+      statusBox.className = "save-status success-box";
+      statusBox.textContent = shouldConfirm ? "確定しました。家族画面へ公開済みです。" : "下書きを保存しました。";
+    }
+    setTimeout(() => renderStaffDashboard(todayJst()), 700);
   } catch (error) {
-    alert(`保存できませんでした: ${error?.message || "不明なエラー"}`);
+    const message = error?.message || "不明なエラー";
+    if (statusBox) {
+      statusBox.className = "save-status error-box";
+      statusBox.textContent = `保存できませんでした: ${message}`;
+    }
+    console.error("daily_records save failed", error);
   } finally {
     setBusy(button, false);
   }
