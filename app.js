@@ -347,6 +347,27 @@ async function saveClientRecord(card, shouldConfirm, button) {
     return;
   }
 
+  if (attendance === "present") {
+    const sys = numberOrNull(card.querySelector(".bp-systolic").value);
+    const dia = numberOrNull(card.querySelector(".bp-diastolic").value);
+    const pulse = numberOrNull(card.querySelector(".pulse").value);
+    const temp = numberOrNull(card.querySelector(".temperature").value);
+
+    const invalid = [];
+    if (sys !== null && (sys < 40 || sys > 300)) invalid.push("血圧（上）は40〜300");
+    if (dia !== null && (dia < 20 || dia > 200)) invalid.push("血圧（下）は20〜200");
+    if (pulse !== null && (pulse < 20 || pulse > 250)) invalid.push("脈拍は20〜250");
+    if (temp !== null && (temp < 30 || temp > 45)) invalid.push("体温は30.0〜45.0");
+
+    if (invalid.length) {
+      if (statusBox) {
+        statusBox.className = "save-status error-box";
+        statusBox.textContent = "入力値を確認してください：" + invalid.join("、");
+      }
+      return;
+    }
+  }
+
   const payload = {
     attendance,
     absence_reason: attendance === "absent" ? absenceReason : null,
@@ -390,7 +411,12 @@ async function saveClientRecord(card, shouldConfirm, button) {
       statusBox.className = "save-status success-box";
       statusBox.textContent = shouldConfirm ? "確定しました。家族画面へ公開済みです。" : "下書きを保存しました。";
     }
-    setTimeout(() => renderStaffDashboard(todayJst()), 700);
+    // 成功メッセージを残し、画面の入力値もそのまま保持する
+    const badge = card.querySelector(".status-badge");
+    if (badge) {
+      badge.className = "status-badge " + result.data.status;
+      badge.textContent = result.data.status === "confirmed" ? "確定済み" : "下書き";
+    }
   } catch (error) {
     const message = error?.message || "不明なエラー";
     if (statusBox) {
