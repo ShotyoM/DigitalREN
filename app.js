@@ -498,11 +498,12 @@ logoutButton.addEventListener("click", async () => {
   renderAuth("ログアウトしました。");
 });
 
-supabase.auth.onAuthStateChange((event) => {
-  if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "USER_UPDATED") {
-    bootstrap();
-  }
+supabase.auth.onAuthStateChange((event, session) => {
+  state.session = session;
+  // トークン更新やSIGNED_IN通知だけで画面を再描画しない。
+  // 入力中・保存完了メッセージが消えるのを防ぐ。
   if (event === "SIGNED_OUT") {
+    state.profile = null;
     renderAuth("ログアウトしました。");
   }
 });
