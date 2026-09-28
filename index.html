@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light" />
+  <title>DigitalREN | デジタル連絡帳</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="test-banner">V0.1 テスト版・架空データのみ</div>
+  <header class="site-header">
+    <div>
+      <p class="eyebrow">DIGITAL RENRAKUCHO</p>
+      <h1>DigitalREN</h1>
+      <p class="subtitle">デイサービス向け デジタル連絡帳</p>
+    </div>
+    <button id="logoutButton" class="button ghost hidden" type="button">ログアウト</button>
+  </header>
+
+  <main id="app" class="app-shell" aria-live="polite">
+    <section class="panel loading-panel">
+      <div class="spinner" aria-hidden="true"></div>
+      <p>読み込み中です…</p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>この画面はV0.1検証用です。実利用者の個人情報は入力しないでください。</p>
+  </footer>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
