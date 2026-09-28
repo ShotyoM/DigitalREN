@@ -347,16 +347,17 @@ async function saveClientRecord(card, shouldConfirm, button) {
     return;
   }
 
-  if (attendance === "present") {
-    const sys = numberOrNull(card.querySelector(".bp-systolic").value);
-    const dia = numberOrNull(card.querySelector(".bp-diastolic").value);
-    const pulse = numberOrNull(card.querySelector(".pulse").value);
-    const temp = numberOrNull(card.querySelector(".temperature").value);
+  const sys = attendance === "present" ? numberOrNull(card.querySelector(".bp-systolic").value) : null;
+  const dia = attendance === "present" ? numberOrNull(card.querySelector(".bp-diastolic").value) : null;
+  const pulseValue = attendance === "present" ? numberOrNull(card.querySelector(".pulse").value) : null;
+  const temp = attendance === "present" ? numberOrNull(card.querySelector(".temperature").value) : null;
+  const messageValue = card.querySelector(".message").value.trim() || null;
 
+  if (attendance === "present") {
     const invalid = [];
     if (sys !== null && (sys < 40 || sys > 300)) invalid.push("血圧（上）は40〜300");
     if (dia !== null && (dia < 20 || dia > 200)) invalid.push("血圧（下）は20〜200");
-    if (pulse !== null && (pulse < 20 || pulse > 250)) invalid.push("脈拍は20〜250");
+    if (pulseValue !== null && (pulseValue < 20 || pulseValue > 250)) invalid.push("脈拍は20〜250");
     if (temp !== null && (temp < 30 || temp > 45)) invalid.push("体温は30.0〜45.0");
 
     if (invalid.length) {
@@ -371,11 +372,11 @@ async function saveClientRecord(card, shouldConfirm, button) {
   const payload = {
     attendance,
     absence_reason: attendance === "absent" ? absenceReason : null,
-    bp_systolic: attendance === "present" ? numberOrNull(card.querySelector(".bp-systolic").value) : null,
-    bp_diastolic: attendance === "present" ? numberOrNull(card.querySelector(".bp-diastolic").value) : null,
-    pulse: attendance === "present" ? numberOrNull(card.querySelector(".pulse").value) : null,
-    temperature: attendance === "present" ? numberOrNull(card.querySelector(".temperature").value) : null,
-    message: card.querySelector(".message").value.trim() || null,
+    bp_systolic: sys,
+    bp_diastolic: dia,
+    pulse: pulseValue,
+    temperature: temp,
+    message: messageValue,
     status: shouldConfirm ? "confirmed" : "draft",
     confirmed_at: shouldConfirm ? new Date().toISOString() : null,
     updated_by: state.session.user.id,
@@ -406,7 +407,23 @@ async function saveClientRecord(card, shouldConfirm, button) {
     }
 
     if (result.error) throw result.error;
-    state.recordsByClient.set(clientId, result.data);
+
+    const saved = result.data;
+    const same = (
+      saved.attendance === payload.attendance &&
+      saved.absence_reason === payload.absence_reason &&
+      saved.bp_systolic === payload.bp_systolic &&
+      saved.bp_diastolic === payload.bp_diastolic &&
+      saved.pulse === payload.pulse &&
+      Number(saved.temperature ?? 0) === Number(payload.temperature ?? 0) &&
+      saved.message === payload.message &&
+      saved.status === payload.status
+    );
+    if (!same) {
+      throw new Error("保存後の読戻し値が入力内容と一致しません。再読み込みして再度お試しください。");
+    }
+
+    state.recordsByClient.set(clientId, saved);
     if (statusBox) {
       statusBox.className = "save-status success-box";
       statusBox.textContent = shouldConfirm ? "確定しました。家族画面へ公開済みです。" : "下書きを保存しました。";
