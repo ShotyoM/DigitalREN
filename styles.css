@@ -87,3 +87,6 @@ input:disabled, textarea:disabled { background: #eef2f5; color: #82909b; }
   .client-card { padding: 16px; }
   .card-actions .button { flex: 1; }
 }
+
+.save-status { margin-top: 14px; padding: 12px 14px; border-radius: 10px; line-height: 1.5; font-weight: 700; }
+.success-box { background: var(--ok-bg); color: var(--ok-text); }
